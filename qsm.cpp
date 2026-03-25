@@ -198,7 +198,7 @@ namespace mc68k
 		if(m_nextQueue != 0xff)
 		{
 			if(m_spiDelay > 0)
-				--m_spiDelay;
+				m_spiDelay -= std::min(m_spiDelay, _deltaCycles);
 			else
 				execTransmit();
 		}
@@ -284,8 +284,6 @@ namespace mc68k
 		if(!(spcr0() & g_spcr0_mstrMask))
 			return;
 
-//		MCLOG("Start SPI transmission");
-
 		const auto cr3 = spcr3();
 
 		const auto halt = cr3 & g_spcr3_haltMask;
@@ -297,6 +295,9 @@ namespace mc68k
 		spsr(spsr() & ~g_spsr_spifMask);
 
 		m_nextQueue = _startAtZero ? 0 : (spcr2() & g_spcr2_newqpMask);
+
+		// Do NOT process the SPI queue synchronously — let exec() handle it.
+		// This avoids re-entrant SPI processing from the QPic callback.
 	}
 
 	void Qsm::execTransmit()
@@ -308,12 +309,19 @@ namespace mc68k
 		if(halt)
 			return;
 
-		if(spsr() & g_spsr_spifMask)
+		// In wrap mode, continue processing even when SPIF is set.
+		// The firmware will clear SPIF when it reads the data.
+		const auto wrap = spcr2() & g_spcr2_wrenMask;
+		if(!wrap && (spsr() & g_spsr_spifMask))
 			return;
 
-		// "SPI Baud Rate = System Clock / (2*SPBR)"
-		const auto br = spcr0() & g_spcr0_spbrMask;
-		m_spiDelay = br << 1;
+		// SPI baud rate delay per word.
+		// On real hardware the QSPI runs in parallel with the CPU and
+		// completes a 16-word transfer in ~103K CPU cycles. In our emulator,
+		// QSPI is serialized with exec() calls, so we use a minimal delay
+		// to let the transfer complete quickly — matching the fact that the
+		// CPU perceives QSPI as near-instantaneous via DMA.
+		m_spiDelay = 1;
 
 		// push out data
 		const auto data = PeripheralBase::read16(transmitRamAddr(m_nextQueue));
@@ -416,7 +424,6 @@ namespace mc68k
 
 		if(!wrap || halt)
 		{
-			// clear enabled flag
 			auto cr1 = spcr1();
 			cr1 &= ~g_spcr1_speMask;
 			spcr1(cr1);
@@ -424,17 +431,29 @@ namespace mc68k
 
 		if(cr2 & g_spcr2_SpifieMask)
 		{
-			// fire interrupt
 			const auto vector = PeripheralBase::read8(PeriphAddress::Qivr) | 1;
 			const auto levelQspi = static_cast<uint8_t>((PeripheralBase::read8(PeriphAddress::Qilr) >> 3) & 0x7);
 			if(!m_mc68k.hasPendingInterrupt(vector, levelQspi))
 				m_mc68k.injectInterrupt(vector, levelQspi);
 		}
 
+		// In wrap mode, restart the transfer but keep SPIF set.
+		// The firmware reads SPIF to know a cycle is done, processes data,
+		// and clears SPIF. The QSPI continues running independently.
 		if(wrap && !halt)
 		{
 			const auto wrapToZero = !(cr2 & g_spcr2_wrtoMask);
+			// Save and restore SPIF across restart since startTransmit clears it
+			const auto savedSpif = spsr() & g_spsr_spifMask;
 			startTransmit(wrapToZero);
+			if (savedSpif)
+				spsr(spsr() | g_spsr_spifMask);
+
+			// Initialize baud rate delay for the first word of the restarted transfer.
+			// Without this, exec() sees m_spiDelay==0 and fires immediately, causing
+			// one QSPI interrupt per exec() call — far too fast.
+			const uint32_t br = spcr0() & 0xff;
+			m_spiDelay = std::max(64u, br * 32);
 		}
 
 		if(halt)

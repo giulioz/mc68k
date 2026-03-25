@@ -925,8 +925,8 @@ void m68k_set_cpu_type(m68ki_cpu_core* m68ki_cpu, unsigned int cpu_type)
 			m68ki_cpu->sr_mask          = 0xf71f; /* T1 T0 S  M  -- I2 I1 I0 -- -- -- X  N  Z  V  C  */
 			m68ki_cpu->cyc_instruction  = m68ki_cycles[4];
 			m68ki_cpu->cyc_exception    = m68ki_exception_cycle_table[4];
-			m68ki_cpu->cyc_bcc_notake_b = -2;
-			m68ki_cpu->cyc_bcc_notake_w = 0;
+			m68ki_cpu->cyc_bcc_notake_b = 2;
+			m68ki_cpu->cyc_bcc_notake_w = 2;
 			m68ki_cpu->cyc_dbcc_f_noexp = 0;
 			m68ki_cpu->cyc_dbcc_f_exp   = 4;
 			m68ki_cpu->cyc_scc_r_true   = 0;
