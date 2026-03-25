@@ -128,7 +128,7 @@ namespace mc68k
 	void Gpt::injectInterrupt(uint8_t _vba)
 	{
 		const auto icr = read16(PeriphAddress::Icr);
-		const auto level = static_cast<uint8_t>((icr >> 8) & 3);
+		const auto level = static_cast<uint8_t>((icr >> 8) & 7);
 		const auto msb = icr & 0xf0;
 		const auto vba = static_cast<uint8_t>(msb | _vba);
 
