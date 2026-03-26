@@ -253,6 +253,9 @@ void m68k_set_bkpt_ack_callback(m68ki_cpu_core* m68ki_cpu, void (*callback)(m68k
  */
 void m68k_set_reset_instr_callback(m68ki_cpu_core* m68ki_cpu, void  (*callback)(m68ki_cpu_core* m68ki_cpu));
 
+/* Set BGND instruction callback (CPU32 background debug halt) */
+void m68k_set_bgnd_callback(m68ki_cpu_core* m68ki_cpu, void  (*callback)(m68ki_cpu_core* m68ki_cpu));
+
 
 /* Set the callback for informing of a large PC change.
  * You must enable M68K_MONITOR_PC in m68kconf.h.

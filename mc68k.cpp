@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <atomic>
+#include <cstdio>
 #include <fstream>
 #include <cstring>	// strstr
 
@@ -32,6 +33,10 @@ extern "C"
 	void m68k_reset_cbk(m68ki_cpu_core* core)
 	{
 		return getInstance(core)->onReset();
+	}
+	void m68k_bgnd_cbk(m68ki_cpu_core* core)
+	{
+		return getInstance(core)->onBgnd();
 	}
 
 	unsigned int m68k_read_disassembler_8  (unsigned int address)
@@ -69,6 +74,7 @@ namespace mc68k
 		m68k_set_int_ack_callback(getCpuState(), m68k_int_ack);
 		m68k_set_illg_instr_callback(getCpuState(), m68k_illegal_cbk);
 		m68k_set_reset_instr_callback(getCpuState(), m68k_reset_cbk);
+		m68k_set_bgnd_callback(getCpuState(), m68k_bgnd_cbk);
 	}
 	Mc68k::~Mc68k()
 	{
@@ -103,6 +109,11 @@ namespace mc68k
 				return true;
 		}
 		return false;
+	}
+
+	void Mc68k::onBgnd()
+	{
+		assert(false && "CPU32 BGND instruction hit");
 	}
 
 	uint32_t Mc68k::onIllegalInstruction(uint32_t _opcode)

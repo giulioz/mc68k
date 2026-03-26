@@ -28391,6 +28391,17 @@ static void m68k_op_reset(m68ki_cpu_core* m68ki_cpu)
 }
 
 
+/* CPU32 BGND instruction: enter background debug mode.
+ * On real hardware, halts CPU for BDM debugger.
+ * In the emulator, calls a callback and continues. */
+static void m68k_op_bgnd(m68ki_cpu_core* m68ki_cpu)
+{
+	if(m68ki_cpu->bgnd_callback)
+		m68ki_cpu->bgnd_callback(m68ki_cpu);
+	USE_CYCLES(4);
+}
+
+
 static void m68k_op_ror_8_s(m68ki_cpu_core* m68ki_cpu)
 {
 	uint* r_dst = &DY;
@@ -36334,6 +36345,7 @@ static const opcode_handler_struct m68k_opcode_handler_table[] =
 	{m68k_op_tas_8_pd7           , 0xffff, 0x4ae7, { 20,  20,  17,  17}},
 	{m68k_op_tas_8_aw            , 0xffff, 0x4af8, { 22,  22,  16,  16}},
 	{m68k_op_tas_8_al            , 0xffff, 0x4af9, { 26,  26,  16,  16}},
+	{m68k_op_bgnd                , 0xffff, 0x4afa, {  0,   0,   0,   4}},
 	{m68k_op_illegal             , 0xffff, 0x4afc, {  4,   4,   4,   4}},
 	{m68k_op_mull_32_aw          , 0xffff, 0x4c38, {  0,   0,  47,  47}},
 	{m68k_op_mull_32_al          , 0xffff, 0x4c39, {  0,   0,  47,  47}},

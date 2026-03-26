@@ -316,12 +316,10 @@ namespace mc68k
 			return;
 
 		// SPI baud rate delay per word.
-		// On real hardware the QSPI runs in parallel with the CPU and
-		// completes a 16-word transfer in ~103K CPU cycles. In our emulator,
-		// QSPI is serialized with exec() calls, so we use a minimal delay
-		// to let the transfer complete quickly — matching the fact that the
-		// CPU perceives QSPI as near-instantaneous via DMA.
-		m_spiDelay = 1;
+		// Real hardware: SPI clock = Fsys/(2*SPBR), 16-bit word = 32*SPBR CPU cycles.
+		// SPBR is the full 8-bit field from SPCR0 (Q uses SPBR=$CA=202).
+		const uint32_t br = spcr0() & 0xff;
+		m_spiDelay = std::max(64u, br * 32);
 
 		// push out data
 		const auto data = PeripheralBase::read16(transmitRamAddr(m_nextQueue));

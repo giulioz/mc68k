@@ -739,6 +739,11 @@ void m68k_set_reset_instr_callback(m68ki_cpu_core* m68ki_cpu, void  (*callback)(
 	CALLBACK_RESET_INSTR = callback ? callback : default_reset_instr_callback;
 }
 
+void m68k_set_bgnd_callback(m68ki_cpu_core* m68ki_cpu, void  (*callback)(m68ki_cpu_core*))
+{
+	m68ki_cpu->bgnd_callback = callback;
+}
+
 void m68k_set_cmpild_instr_callback(m68ki_cpu_core* m68ki_cpu, void  (*callback)(m68ki_cpu_core*, unsigned int, int))
 {
 	CALLBACK_CMPILD_INSTR = callback ? callback : default_cmpild_instr_callback;
@@ -1093,6 +1098,7 @@ void m68k_init(m68ki_cpu_core* m68ki_cpu)
 	m68k_set_rte_instr_callback(m68ki_cpu, NULL);
 	m68k_set_tas_instr_callback(m68ki_cpu, NULL);
 	m68k_set_illg_instr_callback(m68ki_cpu, NULL);
+	m68k_set_bgnd_callback(m68ki_cpu, NULL);
 	m68k_set_pc_changed_callback(m68ki_cpu, NULL);
 	m68k_set_fc_callback(m68ki_cpu, NULL);
 	m68k_set_instr_hook_callback(m68ki_cpu, NULL);

@@ -1000,6 +1000,7 @@ struct m68ki_cpu_core_
  	void (*rte_instr_callback)(m68ki_cpu_core* m68ki_cpu);                       /* Called when a RTE instruction is encountered */
 	int  (*tas_instr_callback)(m68ki_cpu_core* m68ki_cpu);                       /* Called when a TAS instruction is encountered, allows / disallows writeback */
 	int  (*illg_instr_callback)(m68ki_cpu_core* m68ki_cpu, int);                 /* Called when an illegal instruction is encountered, allows handling */
+	void (*bgnd_callback)(m68ki_cpu_core* m68ki_cpu);                            /* Called when a BGND (CPU32) instruction is encountered */
 	void (*pc_changed_callback)(m68ki_cpu_core* m68ki_cpu, unsigned int new_pc); /* Called when the PC changes by a large amount */
 	void (*set_fc_callback)(m68ki_cpu_core* m68ki_cpu, unsigned int new_fc);     /* Called when the CPU function code changes */
 	void (*instr_hook_callback)(m68ki_cpu_core* m68ki_cpu, unsigned int pc);     /* Called every instruction cycle prior to execution */

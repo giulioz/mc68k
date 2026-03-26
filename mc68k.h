@@ -15,7 +15,7 @@ namespace mc68k
 	class Mc68k
 	{
 	public:
-		static constexpr uint32_t CpuStateSize = 600;
+		static constexpr uint32_t CpuStateSize = 608;
 
 		Mc68k();
 		virtual ~Mc68k();
@@ -26,6 +26,7 @@ namespace mc68k
 		bool hasPendingInterrupt(uint8_t _vector, uint8_t _level) const;
 
 		virtual void onReset() {}
+		virtual void onBgnd();
 		virtual uint32_t onIllegalInstruction(uint32_t _opcode);
 
 		virtual uint8_t read8(const uint32_t _addr)
