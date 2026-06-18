@@ -391,6 +391,15 @@ namespace mc68k
 	{
 		std::lock_guard lock(m_mutexSciRx);
 
+		// On real MC68331, reading SCDR consumes the received byte ONLY when
+		// RDRF is set; if RDRF is clear it returns the last received value and
+		// does NOT pop a fresh byte. Without this gate, an ISR that always reads
+		// SCSR+SCDR (e.g. one firing for TDRE) silently consumes and drops queued
+		// RX bytes, since its RX-handling path only runs when its captured RDRF
+		// bit was set.
+		if(!bitTest(ScsrBits::ReceiveDataRegisterFull))
+			return m_lastSciRxByte;
+
 		if(m_sciRxData.empty())
 		{
 //			MCLOG("Empty SCI read");
@@ -402,6 +411,7 @@ namespace mc68k
 		m_sciRxData.pop_front();
 		m_sciRxDataEmpty = m_sciRxData.empty();
 		m_sciRxDelay = g_sciRxDelay;
+		m_lastSciRxByte = res;
 		return res;
 	}
 

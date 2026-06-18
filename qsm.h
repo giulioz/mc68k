@@ -113,6 +113,7 @@ namespace mc68k
 		std::deque<uint16_t> m_sciRxData;
 		bool m_sciRxDataEmpty = true;
 		uint32_t m_sciRxDelay = 0;
+		uint16_t m_lastSciRxByte = 0;
 
 		uint16_t m_pendingTxDataCounter = 0;
 
