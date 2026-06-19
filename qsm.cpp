@@ -25,6 +25,19 @@ namespace mc68k
 
 	constexpr uint32_t g_sciRxDelay = 50;
 
+	// QSPI per-word transfer time in Fsys cycles. The SPI clock is Fsys/(2*SPBR)
+	// and a word is BITS bits wide (SPCR0[13:10], which encodes 8..16 with 0
+	// meaning 16). So one word takes BITS * 2 * SPBR cycles. Modelling BITS is
+	// essential: the microQ uses 16-bit QSPI words, but the Q uses 8-bit words, so
+	// a fixed 16-bit assumption ran the Q's QSPI — and the demo sequencer it clocks
+	// (QSPI IRQ, vector $3F) — at half speed.
+	static uint32_t qspiWordDelayCycles(const uint16_t _spcr0)
+	{
+		const uint32_t spbr = _spcr0 & 0xff;
+		const uint32_t bits = (_spcr0 >> 10) & 0xf;
+		return std::max(64u, (bits ? bits : 16) * 2 * spbr);
+	}
+
 	Qsm::Qsm(Mc68k& _mc68k) : m_mc68k(_mc68k), m_qspi(*this)
 	{
 		write16(PeriphAddress::Spcr1, 0b0000010000000100);
@@ -315,11 +328,8 @@ namespace mc68k
 		if(!wrap && (spsr() & g_spsr_spifMask))
 			return;
 
-		// SPI baud rate delay per word.
-		// Real hardware: SPI clock = Fsys/(2*SPBR), 16-bit word = 32*SPBR CPU cycles.
-		// SPBR is the full 8-bit field from SPCR0 (Q uses SPBR=$CA=202).
-		const uint32_t br = spcr0() & 0xff;
-		m_spiDelay = std::max(64u, br * 32);
+		// SPI baud-rate delay until this word completes (see qspiWordDelayCycles).
+		m_spiDelay = qspiWordDelayCycles(spcr0());
 
 		// push out data
 		const auto data = PeripheralBase::read16(transmitRamAddr(m_nextQueue));
@@ -457,11 +467,10 @@ namespace mc68k
 			if (savedSpif)
 				spsr(spsr() | g_spsr_spifMask);
 
-			// Initialize baud rate delay for the first word of the restarted transfer.
-			// Without this, exec() sees m_spiDelay==0 and fires immediately, causing
-			// one QSPI interrupt per exec() call — far too fast.
-			const uint32_t br = spcr0() & 0xff;
-			m_spiDelay = std::max(64u, br * 32);
+			// Baud-rate delay for the first word of the restarted transfer; without
+			// it, exec() sees m_spiDelay==0 and fires immediately (one QSPI IRQ per
+			// exec() call). See qspiWordDelayCycles.
+			m_spiDelay = qspiWordDelayCycles(spcr0());
 		}
 
 		if(halt)
