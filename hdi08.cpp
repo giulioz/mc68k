@@ -273,7 +273,10 @@ namespace mc68k
 			// Only request data on the first byte of a read sequence.
 			// Requesting on intermediate bytes would allow concurrent DSP
 			// threads to deliver data mid-sequence, causing a torn read.
-			const auto firstByte = littleEndian() ? WordFlags::L : WordFlags::H;
+			// The host CPU reads the three byte registers in ascending address
+			// order (H, M, L).  HLEND changes which significance each register
+			// carries, not the transaction order.
+			const auto firstByte = WordFlags::H;
 			if(_index == firstByte)
 				m_rxEmptyCallback(true);
 
@@ -304,8 +307,6 @@ namespace mc68k
 			bytes[1] = (word >> 8) & 0xff;
 			bytes[2] = (word >> 16) & 0xff;
 
-			if(_index == WordFlags::H)
-				pop();
 		}
 		else
 		{
@@ -313,9 +314,10 @@ namespace mc68k
 			bytes[1] = (word >> 8) & 0xff;
 			bytes[2] = (word) & 0xff;
 
-			if(_index == WordFlags::L)
-				pop();
 		}
+
+		if(_index == WordFlags::L)
+			pop();
 
 		removeIndex(m_readFlags, _index);
 

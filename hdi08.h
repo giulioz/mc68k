@@ -88,6 +88,8 @@ namespace mc68k
 		void icr(uint8_t _icr) { write8(PeriphAddress::HdiICR, _icr); }
 
 		bool canReceiveData();
+		uint32_t currentRxWord() const { return m_rxd; }
+		size_t queuedRxWords() const { return m_rxData.size(); }
 
 		void setRxEmptyCallback(const CallbackRxEmpty& _rxEmptyCallback)
 		{
